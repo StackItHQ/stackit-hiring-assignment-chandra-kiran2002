@@ -1,13 +1,296 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>CSV Importer</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <title>CSV File Impoter </title>
+    <style>
+        .progress-container {
+            width: 100%;
+            background-color: #f1f1f1;
+        }
+
+        .progress-bar {
+            width: 0;
+            height: 30px;
+            background-color: #4caf50;
+            text-align: center;
+            line-height: 30px;
+            color: white;
+        }
+        .dropzone {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            background-color: #f8f9fa;
+        }
+    </style>
 </head>
-<body>
-    <h1>CSV Importer</h1>
-    <form action="/upload" method="POST" enctype="multipart/form-data">
-        <input type="file" name="csvFile" accept=".csv">
-        <button type="submit">Upload and Import</button>
-    </form>
+<body style="margin-top: 10%;margin-left: 10%;">
+    <h1 class="bold-h1" >CSV File Upload</h1>
+    <div id="uploadCSV-form" class="container mt-4">
+        
+        
+        <!-- Create a Bootstrap-styled drag-and-drop file input -->
+        <div class="form-group text-center">
+            <label for="csvFileInput" class="custom-file-label">Drag & Drop or Click to Select a CSV File</label>
+            <input type="file" class="custom-file-input" id="csvFileInput" accept=".csv" onchange="handleFileSelect(event)">
+            <div class="dropzone text-center" id="dropzone">
+                <p>Drag & Drop or Click to Select a CSV File</p>
+            </div>
+            </input>
+        </div>
+        
+        <!-- Create a dropzone for drag-and-drop -->
+        
+        
+        <!-- Upload button (you can style it further) -->
+        <button class="btn btn-primary btn-block mt-3" onclick="uploadCSV()">Upload CSV</button>
+    </div>
+
+    <div id="checkboxContainer">
+      <!-- Existing checkboxes and new checkboxes will be added here -->
+  </div>
+    
+
+
+
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+
+    <script>
+        var path = '';
+        function handleFileSelect(event) {
+            event.preventDefault();
+            const fileInput = document.getElementById('csvFileInput');
+            const fileName = fileInput.files[0].name;
+            const customLabel = document.querySelector('.custom-file-label');
+            customLabel.textContent = fileName;
+        }
+
+        // Add drag-and-drop functionality
+        const dropzone = document.getElementById('dropzone');
+
+        dropzone.addEventListener('dragover', function(event) {
+            event.preventDefault(); // Prevent the default behavior
+            dropzone.classList.add('bg-light'); // Add a background color when dragging over
+        });
+
+        dropzone.addEventListener('dragleave', function(event) {
+            event.preventDefault(); // Prevent the default behavior
+            dropzone.classList.remove('bg-light'); // Remove background color when dragging out
+        });
+
+        dropzone.addEventListener('drop', function(event) {
+            event.preventDefault(); // Prevent the default behavior
+            dropzone.classList.remove('bg-light'); // Remove background color on drop
+            const file = event.dataTransfer.files[0];
+            const fileInput = document.getElementById('csvFileInput');
+            fileInput.files = event.dataTransfer.files;
+            handleFileSelect(event);
+        });
+
+        // Handle file selection when input changes
+        document.getElementById('csvFileInput').addEventListener('change', handleFileSelect);
+        function downloadCSV() {
+            // URL of the server endpoint that serves the CSV file
+            const csvDownloadUrl = 'http://localhost:8000/download-csv'; // Replace with your server's endpoint
+
+            // Data to include in the POST request
+            const requestData = {
+                fileName: path, // Replace with the actual file path on the server
+            };
+
+            // Configure the fetch options for the POST request
+            const fetchOptions = {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData),
+            };
+
+            // Use the fetch API to initiate the POST request
+            fetch(csvDownloadUrl, fetchOptions)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.blob(); // Get the response as a Blob
+                })
+                .then(blob => {
+                    // Create a temporary anchor element to trigger the download
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = 'data.csv'; // Specify the filename
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(error => {
+                    // Handle errors
+                    console.error('There was a problem with the fetch operation:', error);
+                    alert('Error downloading the CSV file.');
+                });
+        }
+        function selectCSV() {
+            
+            const checkboxContainer = document.getElementById("checkboxContainer");
+            const checkboxes = checkboxContainer.querySelectorAll('input[type="checkbox"]');
+            const checkedItems = [];
+
+            checkboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    const labelForCheckbox = checkbox.nextElementSibling;
+                    if (labelForCheckbox && labelForCheckbox.tagName === 'LABEL') {
+                        checkedItems.push(labelForCheckbox.textContent);
+                    }
+                }
+            });
+            if(checkedItems.length == 0){
+                alert("please select at least one column")
+            return
+            }
+            var columns = "";
+            for(var i=0;i<checkedItems.length;i++){
+                if(i != checkedItems.length -1)
+                columns = columns + checkedItems[i]+"@";
+                else
+                columns = columns + checkedItems[i];
+            }
+            console.log(checkedItems)
+            var myHeaders = new Headers();
+            myHeaders.append("Content-Type", "application/json");
+            fetch("http://localhost:8000/selectCSV", {
+                method: "POST",
+                headers: myHeaders,
+                body: JSON.stringify({ 'columns': columns,'path':path }),
+            })
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('checkboxContainer').innerHTML = "<button type='button' class='btn btn-success' onclick='downloadCSV()'>Download</button> &nbsp;<label for='toEmail'>To Email:</label> <input type='email' id='toEmail' name='toEmail' required><button type='button' class='btn btn-success' onclick='sendEmail()'>Send Email</button>"
+            });
+        }
+      function clearItems(string) {
+            // Get a reference to the div by its ID
+            const divToClear = document.getElementById(string);
+
+            // Remove all child elements of the div
+            while (divToClear.firstChild) {
+                divToClear.removeChild(divToClear.firstChild);
+            }
+        }
+        function uploadCSV() {
+          clearItems('checkboxContainer')
+            const input = document.getElementById('csvFileInput');
+            const progressBar = document.getElementById('progressBar');
+            
+            if (input.files.length === 0) {
+                alert('Please select a CSV file.');
+                return;
+            }
+
+            const file = input.files[0];
+            const formData = new FormData();
+            formData.append('csvFile', file);
+
+            fetch('http://localhost:8000/uploadCSVFile', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.file);
+                path =  data.file 
+
+                const checkboxContainer = document.getElementById('checkboxContainer');
+                columnNames = data.data
+                var h4Element = document.createElement('h4');
+
+                // Set the content of the <h4> element
+                h4Element.textContent = 'Select at least one column';
+                checkboxContainer.appendChild(h4Element);
+                columnNames.forEach(columnName => {
+    // Create a new checkbox input element with Bootstrap classes
+                const newCheckbox = document.createElement('input');
+                newCheckbox.type = 'checkbox';
+                newCheckbox.className = 'form-check-input'; // Add Bootstrap class for checkboxes
+
+                // Set the ID for the checkbox
+                newCheckbox.id = columnName;
+
+                // Create a label element with Bootstrap classes
+                const label = document.createElement('label');
+                label.htmlFor = columnName;
+                label.textContent = columnName;
+                label.className = 'form-check-label'; // Add Bootstrap class for labels
+
+                // Create a new div to contain the checkbox and label with Bootstrap class
+                const checkboxDiv = document.createElement('div');
+                checkboxDiv.className = 'form-check'; // Add Bootstrap class for form-check
+
+                // Append the new checkbox and label to the container div
+                checkboxDiv.appendChild(newCheckbox);
+                checkboxDiv.appendChild(label);
+
+                // Append the container div to the checkbox container
+                checkboxContainer.appendChild(checkboxDiv);
+            });
+
+            const submitButton = document.createElement('button');
+
+            // Set Bootstrap classes for styling
+            submitButton.className = 'btn btn-primary'; // Add Bootstrap classes for a primary button
+
+            // Set the button's text content
+            submitButton.textContent = 'Submit';
+            submitButton.setAttribute('onclick', 'selectCSV()');
+
+            checkboxContainer.appendChild(submitButton);
+            document.getElementById('uploadCSV-form').style.display = "none";
+
+
+                // Set the type attribute to "checkbox"
+                
+                alert("Upload Done")
+
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        function sendEmail() {
+            const emailInput = document.getElementById('toEmail');
+            const email = emailInput.value;
+
+            fetch('http://localhost:8000/sendEmail', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 'email': email,'path':path }),
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Email sent successfully.');
+                } else {
+                    alert('Failed to send email.');
+                }
+            })
+            .catch(error => {
+                console.error('Error sending email:', error);
+                alert('Error sending email.');
+            });
+        }
+    </script>
 </body>
 </html>
