@@ -6,8 +6,6 @@ const bodyParser = require('body-parser');
 const { DataFrame } = require('dataframe-js');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
-
-
 const fs = require("fs");
 
 
